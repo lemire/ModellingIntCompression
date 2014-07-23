@@ -32,6 +32,25 @@ public class RunCostModels {
         }
         return cost;
     }
+    public  static int packedvarint(int[] data, int w){
+        double cost = 0;
+        for(int k = 0; k+w <= data.length; k += w) {
+            cost += 0.25; // store bit width
+            cost += (Util.maxbits(data, k,w)+7)/8*w; 
+            if(Util.maxbits(data, k,w) == 0) cost +=w;
+        } 
+        return (int) Math.round(cost);
+    }
+    public  static int varintgb(int[] data){
+        double cost = 0;
+        for(int v : data) {
+            cost += 0.25;// 2bits
+            cost += (Util.bits(v)+7)/8;
+            if(v == 0) ++cost;
+        }
+        return (int) Math.round(cost);
+    }
+    
     public  static int simple8b(int[] data){
         int cost = 0;
         for(int k = 0; k<data.length; ) {
@@ -118,6 +137,41 @@ public class RunCostModels {
     
     public  static int fastpfor(int[] data,int w){
         int cost = 0;
+        int[] buffer = new int[33];
+        for(int k = 0; k+w <= data.length; k += w) {
+            int maxbit = Util.maxbits(data, k,w);
+            int lowestcost = maxbit * w;
+            int ab = maxbit;
+            int nofe = 0;
+            for(int b = 0; b<=maxbit; ++b) {
+                int numberofexceptions = 0;
+                for(int z = k;z<k+w; ++z) {
+                    if(Util.bits(data[z])>b) ++ numberofexceptions;
+                }
+                int thiscost = b*w + numberofexceptions * (8 + maxbit-b);
+                if(thiscost < lowestcost) {
+                    lowestcost = thiscost;
+                    ab = b;
+                    nofe = numberofexceptions;
+                }
+            }
+            buffer[maxbit-ab]+=nofe;
+            if(nofe==0) 
+              cost +=2;
+            else 
+              cost += 3 + nofe; 
+            
+            cost += (ab*w+7)/8; 
+        } 
+        for(int k = 0; k<buffer.length;++k){
+            cost += (buffer[k]+31)/32 * 32 * k /8;
+        }
+        return cost;
+    }
+    
+    
+    public  static int blockedfastpfor(int[] data,int w){
+        int cost = 0;
         for(int k = 0; k+w <= data.length; k += w) {
             int maxbit = Util.maxbits(data, k,w);
             int lowestcost = maxbit * w;
@@ -145,13 +199,11 @@ public class RunCostModels {
         } 
         return cost;
     }
-    
-    
     public static void main(String[] args) {
         int Max = 1<<25;
         System.out.println("We estimate the number of bits per int.");
         ClusteredDataGenerator cdg = new ClusteredDataGenerator();
-        for(int N = 1048576; N<=524288*8;N*=4){
+        for(int N = 131072; N<=1048576;N*=8){
             System.out.println("N="+N);
             int[] data = cdg.generateClustered(N, Max);
             for(int k = data.length-1; k>0; --k)
@@ -162,18 +214,25 @@ public class RunCostModels {
                 int loc = Math.abs(r.nextInt())%data.length; 
                 data[loc]+=Math.abs(r.nextInt()) % (1<<8);
             }
-            System.out.println("reasonable lower bound "+binarypackinglowerbound(data)*8.0/N);
+            java.text.DecimalFormat df = new java.text.DecimalFormat("0.00");
 
-            System.out.println("binary packing (32) "+binarypacking(data,32)*8.0/N);
-            System.out.println("binary packing (128) "+binarypacking(data,128)*8.0/N);
-            System.out.println("fastpfor (128) "+fastpfor(data,128)*8.0/N);
-            System.out.println("fastpfor (256) "+fastpfor(data,256)*8.0/N);
+            System.out.println("reasonable lower bound "+df.format(binarypackinglowerbound(data)*8.0/N));
+
+            System.out.println("binary packing (32) "+df.format(binarypacking(data,32)*8.0/N));
+            System.out.println("binary packing (128) "+df.format(binarypacking(data,128)*8.0/N));
+            System.out.println("fastpfor (128) "+df.format(fastpfor(data,128)*8.0/N));
+            System.out.println("fastpfor (256) "+df.format(fastpfor(data,256)*8.0/N));
+            System.out.println("blockedfastpfor (128) "+df.format(fastpfor(data,128)*8.0/N));
+            System.out.println("blockedfastpfor (256) "+df.format(fastpfor(data,256)*8.0/N));
             
-            System.out.println("varint "+varint(data)*8.0/N);
-            System.out.println("idealvarint "+idealvarint(data)*8.0/N);
-            System.out.println("simple4b "+simple4b(data)*8.0/N);
-            System.out.println("simple8b "+simple8b(data)*8.0/N);
-            System.out.println("simple16b "+simple16b(data)*8.0/N);
+            System.out.println("varint "+df.format(varint(data)*8.0/N));
+            System.out.println("idealvarint "+df.format(idealvarint(data)*8.0/N));
+            System.out.println("simple4b "+df.format(simple4b(data)*8.0/N));
+            System.out.println("simple8b "+df.format(simple8b(data)*8.0/N));
+            System.out.println("simple16b "+df.format(simple16b(data)*8.0/N));
+            System.out.println("packedvarint4 "+df.format(packedvarint(data,4)*8.0/N));
+            System.out.println("packedvarint8 "+df.format(packedvarint(data,8)*8.0/N));
+            System.out.println("varintgb "+df.format(varintgb(data)*8.0/N));
             
 
             System.out.println();
