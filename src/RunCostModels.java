@@ -229,8 +229,10 @@ public class RunCostModels {
         for (int k = 0; k < data.length;) {
             // we do something simple... not quite simple8b
             int left = data.length - k;
-            if (Util.maxbits(data, k, Math.min(left, 90)) <= 0) {
-                k += 90;
+            if (Util.maxbits(data, k, Math.min(left, 240)) <= 0) {
+                k += 240;
+            } else if (Util.maxbits(data, k, Math.min(left, 120)) <= 0) {
+                    k += 120;
             } else if (Util.maxbits(data, k, Math.min(left, 60)) <= 1) {
                 k += 60;
             } else if (Util.maxbits(data, k, Math.min(left, 30)) <= 2) {
