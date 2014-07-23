@@ -10,6 +10,14 @@ public class RunCostModels {
         } 
         return cost;
     }
+    public  static int binarypackinglowerbound(int[] data){
+        int cost = 0;
+        for(int k = 0; k < data.length;++k) {
+            cost += Util.bits(data[k]);
+        } 
+        return (cost+7)/8;
+    }
+
     public  static int varint(int[] data){
         int cost = 0;
         for(int v : data) {
@@ -82,6 +90,8 @@ public class RunCostModels {
             int[] data = cdg.generateClustered(N, Max);
             for(int k = data.length-1; k>0; --k)
               data[k] -= data[k-1];
+            System.out.println("reasonable lower bound "+binarypackinglowerbound(data)*8.0/N);
+
             System.out.println("binary packing (32) "+binarypacking(data,32)*8.0/N);
             System.out.println("binary packing (128) "+binarypacking(data,128)*8.0/N);
             System.out.println("fastpfor (128) "+fastpfor(data)*8.0/N);
