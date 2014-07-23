@@ -199,21 +199,9 @@ public class RunCostModels {
         } 
         return cost;
     }
-    public static void main(String[] args) {
-        int Max = 1<<25;
-        System.out.println("We estimate the number of bits per int.");
-        ClusteredDataGenerator cdg = new ClusteredDataGenerator();
-        for(int N = 131072; N<=1048576;N*=8){
-            System.out.println("N="+N);
-            int[] data = cdg.generateClustered(N, Max);
-            for(int k = data.length-1; k>0; --k)
-              data[k] -= data[k-1];
-            // to make things fun, I will add a few jumps...
-            java.util.Random r= new java.util.Random();
-            for(int k = 0; k<N*0.01;++k) {
-                int loc = Math.abs(r.nextInt())%data.length; 
-                data[loc]+=Math.abs(r.nextInt()) % (1<<8);
-            }
+    
+    public static void process(int[] data) {
+            int N = data.length;
             java.text.DecimalFormat df = new java.text.DecimalFormat("0.00");
 
             System.out.println("reasonable lower bound "+df.format(binarypackinglowerbound(data)*8.0/N));
@@ -235,7 +223,37 @@ public class RunCostModels {
             System.out.println("varintgb "+df.format(varintgb(data)*8.0/N));
             
 
-            System.out.println();
+            System.out.println();        
+    }
+    
+    public static void main(String[] args) {
+        int Max = 1<<22;
+        System.out.println("We estimate the number of bits per int.");
+        System.out.println("First with uniform data.");
+        UniformDataGenerator udg=new UniformDataGenerator();
+        double[] P = {0.99,0.95,0.5,0.1};
+        for(double p : P) {
+            System.out.println("uniform distribution with density = "+p);
+            int[] array = udg.generateUniform((int)Math.round(Max*p), Max);
+            for(int k = array.length-1; k>0; --k)
+              array[k] -= array[k-1] + 1;
+            process(array);
+        }
+        Max = 1<<25;
+        System.out.println("Next with cluster data.");
+        ClusteredDataGenerator cdg = new ClusteredDataGenerator();
+        for(int N = 131072; N<=1048576;N*=8){
+            System.out.println("N="+N);
+            int[] data = cdg.generateClustered(N, Max);
+            for(int k = data.length-1; k>0; --k)
+              data[k] -= data[k-1] + 1;
+            // to make things fun, I will add a few jumps...
+            java.util.Random r= new java.util.Random();
+            for(int k = 0; k<N*0.01;++k) {
+                int loc = Math.abs(r.nextInt())%data.length; 
+                data[loc]+=Math.abs(r.nextInt()) % (1<<8);
+            }
+            process(data);
         }
     }
     
