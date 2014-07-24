@@ -481,6 +481,9 @@ public class RunCostModels {
 
     public static void process(int[] data, int Max) {
         int N = data.length;
+        if(N<4*256) {
+            System.out.println("==Some models do not support very small arrays.");
+        }
         java.text.DecimalFormat df = new java.text.DecimalFormat("0.00");
 
         System.out.println("reasonable lower bound "
