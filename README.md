@@ -7,5 +7,5 @@ Repository to experiment with models of integer compression (not meant to be par
 Usage:
 
     cd src
-    javac RunCostModels.java
+    javac RunCostModels.java ClusteredDataGenerator.java
     java RunCostModels
