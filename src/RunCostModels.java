@@ -302,6 +302,30 @@ public class RunCostModels {
         }
         return cost;
     }
+    public static int exppfor(int[] data) {
+        double cost = 0;
+        int w = 256;
+        for (int k = 0; k + w <= data.length; k += w) {
+            int totalsecondmax = 0;
+            int totalmax = 0;
+            for(int j = 0; j<w; j+=16){
+                int tmax = 0;
+                int secondmax = 0;
+                for (int i = 0; i<16;++i){
+                    int val =data[k+j+i]; 
+                    if(val>tmax) tmax = val;
+                    else if(val > secondmax ) secondmax = val;
+                }
+                if(totalmax<tmax) totalmax = tmax;
+                if(totalsecondmax<secondmax) totalsecondmax = secondmax;
+            }
+            //System.out.println(Util.bits(totalmax) - Util.bits(totalsecondmax) );
+            double cost1 = (Util.bits(totalsecondmax) * w + 7) / 8 + 2 + w/16*(0.5+(Util.bits(totalmax) - Util.bits(totalsecondmax))/8.0);
+            double cost2 = (Util.bits(totalmax) * w + 7) / 8 + 2;
+            if(cost1<cost2) cost += cost1; else cost +=cost2;
+        }
+        return (int) Math.round(cost);
+    }
 
     public static int fastpfor(int[] data, int w) {
         int cost = 0;
@@ -329,9 +353,10 @@ public class RunCostModels {
             buffer[maxbit - ab] += nofe;
             if (nofe == 0)
                 cost += 2;
-            else
+            else {
+                //System.out.println((maxbit - ab)+" "+nofe*1.0/w);
                 cost += 3 + nofe;
-
+            }
             cost += (ab * w + 7) / 8;
         }
         for (int k = 0; k < buffer.length; ++k) {
@@ -391,7 +416,8 @@ public class RunCostModels {
                 + df.format(fastpfor(data, 128) * 8.0 / N));
         System.out.println("blockedfastpfor (256) "
                 + df.format(fastpfor(data, 256) * 8.0 / N));
-
+        System.out.println("exppfor (256) "
+                + df.format(exppfor(data) * 8.0 / N));
         System.out.println("varint " + df.format(varint(data) * 8.0 / N));
         System.out.println("idealvarint "
                 + df.format(idealvarint(data) * 8.0 / N));
