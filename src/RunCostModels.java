@@ -63,7 +63,8 @@ public class RunCostModels {
         return m;
     }
 
-    private static boolean __nate(int[] data, int pos, int small, int large) {
+    // all less than large, at most one greater or equal to small
+    private static boolean __hybridvbyte(int[] data, int pos, int small, int large) {
         int left = Math.min(4, data.length - pos);
         int smallcnt = 0;
         int largecnt = 0;
@@ -75,10 +76,12 @@ public class RunCostModels {
             else
                 return false;
         }
-        return largecnt == 1;
+        
+        return largecnt <= 1;
     }
 
-    private static boolean __natereverse(int[] data, int pos, int small,
+    // all less than large, at least one less than small
+    private static boolean __hybridvbytereverse(int[] data, int pos, int small,
             int large) {
         int left = Math.min(4, data.length - pos);
         int smallcnt = 0;
@@ -91,126 +94,110 @@ public class RunCostModels {
             else
                 return false;
         }
-        return largecnt <= 3;
+        return smallcnt >= 1;
     }
 
-    public static int nate(int[] data) {
+    public static int hybridvbyte(int[] data) {
         int cost = 0;
-        int[] counters = new int[16];
+        int[] counters = new int[18];
         for (int k = 0; k < data.length;) {
             // we do something simple... not quite simple8b
             int left = data.length - k;
-            if (Util.maxbits(data, k, Math.min(left, 32)) <= 0) {
+            if (Util.maxbits(data, k, Math.min(left, 32)) == 0) {
+                // 32 numbers where delta is 0 (consecutive) (.25 b/d)
                 k += 32;
                 cost += 1;
                 counters[0] += 32;
-            } else if (Util.maxbits(data, k, Math.min(left, 4)) <= 2) {
+            } else if (Util.maxbits(data, k, Math.min(left, 4)) < 3) {
+                // 4 numbers where deltas less than or equal to 3 (2 b/d)
                 k += 4;
                 cost += 1;
                 counters[1] += 4;
             } else if (Util.maxbits(data, k, Math.min(left, 32)) <= 3) {
+                // 32 numbers with deltas expressable as 3-bit  (3.25 b/d)
                 k += 32;
-                cost += 32 * 3 / 8 + 1;
+                cost += 1 + (3 * 32)/8;
                 counters[2] += 32;
-            } else if (__nate(data, k, 4, 256)) {
-                // We then have an encoding for cases for 3 small 0B deltas and
-                // one 1B.
-                // 3 x (d <= 3) + 1 (D <= 256) == 8b + 8b / 4 docs == 4 bits per
-                // doc
+            } else if (__hybridvbyte(data, k, 3, 256)) {
+                // 3 tiny 0B deltas and one 1B. (4 b/d)
                 k += 4;
                 cost += 2;
                 counters[3] += 4;
             } else if (Util.maxbits(data, k, Math.min(left, 32)) <= 4) {
+                // 32 expressable as 4-bit (4.25 b/d)
                 k += 32;
                 cost += 1 + 4 * 32 / 8;
                 counters[4] += 32;
-            } else if (Util.maxbits(data, k, Math.min(left, 12)) <= 8) {
+            } else if (__hybridvbyte(data, k, 11, 256)) {
+                // one tiny delta (< 11) and 3 small (< 256) (8 b/d)
                 k += 4;
-                cost += 1 + 4;
+                cost += 4;
                 counters[5] += 4;
-            } else if (__nate(data, k, 256, 512)) {
-                // It turns out we can also handle one slightly higher delta for
-                // the same cost:
-                // 3 x (d <= 256) + 1 x (d <= 512) == 8b + (4 * 8b) / 4 docs ==
-                // 10 bits per doc
+            } else if (Util.maxbits(data, k, Math.min(left, 4)) <= 8) {
+                // 4 that fit in a byte (10 b/d)
                 k += 4;
                 cost += 1 + 4;
                 counters[6] += 4;
-            } else if (__nate(data, k, 256, 65546)) {
+            } else if (__hybridvbyte(data, k, 256, 512)) {
+                // 3 that fit in a byte, plus one less than 512 (10 b/d)
+                k += 4;
+                cost += 1 + 4;
+                counters[7] += 4;
+            } else if (__hybridvbyte(data, k, 256, 256 * 256)) {
+                // 3 that fit in a byte, plus one that fits in two bytes (12 b/d)
                 k += 4;
                 cost += 1 + 3 + 2;
-                // It's probably worth also handling one medium jump among
-                // smalls:
-                // 3 x (d <= 256) + 1 x (d <=65546) == 8b + (3 * 8b) + (1 * 16b)
-                // / 4 docs
-                // == 12 bits per doc
-                counters[7] += 4;
-            } else if (__nate(data, k, 512, 65546)) {
+                counters[8] += 4;
+            } else if (__hybridvbytereverse(data, k, 512, 256 * 256)) {
+                // 4 that fit in 2 bytes, at least one less than 512 (16 b/d)
                 k += 4;
-                cost += 1 + 3 * 2 + 2;
-                //
-                // Next up we handle cases where we have one small and 3 medium.
-                // Through
-                // some trickery, we can actually handle up to 512 for the small
-                // (2 x
-                // 256):
-                // 1 x (d <= 512) + 3 x (d <= 65536) == 8b + (3 * 16b) + (1 *
-                // 16b) / 4
-                // docs == 16 bits per doc
-            } else if (__nate(data, k, 65536, 65546)
-                    || __nate(data, k, 65536, 2 * 65546)) {
+                cost += 1 + 3 * 2 + 1;
+                counters[9] += 4;
+            } else if (Util.maxbits(data, k, Math.min(left, 4)) <= 16) {
+                // 4 that fit in 2 bytes (18 b/d)
                 k += 4;
                 cost += 1 + 4 * 2;
-                // Then cases where we need a key and 4 2B values. We can handle
-                // one
-                // "burst" to double:
-                // 4 x (d <= 65536) == 8b + (4 * 16b) / 4 docs == 18 bits per
-                // doc
-                // 3 x (d <= 65536) + 1 x (d <= 2*65536) == 18 bits per doc
-            } else if (__nate(data, k, 65536, 1 << (3 * 8))) {
+                counters[10] += 4;
+            } else if (__hybridvbyte(data, k, 256 * 256, 2 *256 * 256)) {
+                // 3 that fit in 2 bytes plus one less than double that (18 b/d)
+                k += 4;
+                cost += 1 + 4 * 2;
+                counters[11] += 4;
+            } else if (__hybridvbyte(data, k, 256 * 256, 256 * 256 * 256)) {
+                // 3 that fit in 2 bytes plus one that can fit in 3 bytes (20 b/d)
                 k += 4;
                 cost += 1 + 3 * 2 + 3;
-                // Beyond that we need to burst to add one 3B large to the mix:
-                // 3 x (d <= 65536) + 1 x (d <= 3B) == 8b + (3 * 16b) + (1 *
-                // 24b) / 4
-                // docs == 20 bits per doc
-            } else if (__natereverse(data, k, 65536, 1 << (3 * 8))) {
-                // And then we handle cases of one 2B double-medium and 3 x 3B
-                // large.
-                // 1 x (d <= 2*65536) + 3 x (d <= 3B) == 8b + (1 * 16b) + (3 *
-                // 24b) / 4
-                // docs == 24 bits per doc
+                counters[12] += 4;
+            } else if (__hybridvbytereverse(data, k, 2 * 256 * 256, 256 * 256 * 256)) {
+                // one double-2B 3 x 3B (24 b/d)
                 k += 4;
                 cost += 1 + 2 + 3 * 3;
+                counters[13] += 4;
             } else if (Util.maxbits(data, k, Math.min(left, 4)) <= 24) {
-                // Then we handle cases where we we need 4 3B large elements:
-                // 4 x (d <=3B) == 8b + (4 * 24b) / 4 docs == 26 bits per doc
+                // 4 that fit in 3B (26 b/d)
                 k += 4;
                 cost += 1 + 4 * 3;
-            } else if (__nate(data, k, 1 << (3 * 8), 2 << (3 * 8))) {
-                // We can double the range for one of the elements without extra
-                // cost:
-                // 3 x (d <=3B) + 1 x (d <=2*3B) == 8b + (4 * 24b) / 4 docs ==
-                // 26 bits per doc
+                counters[14] += 4;
+            } else if (__hybridvbyte(data, k, 256 * 256 * 256, 2 * 256 * 256 * 256)) {
+                // 3 3B large elements plus one less than double-3B (26 b/d)
                 k += 4;
                 cost += 1 + 4 * 3;
-            } else if (__nate(data, k, 1 << (3 * 8), Integer.MAX_VALUE)) {
+                counters[15] += 4;
+            } else if (__hybridvbyte(data, k, 256 * 256 * 256, 256 * 256 * 256 * 256)) {
+                // 3 3B large elements plus one 4B huge (28 b/d)
                 k += 4;
                 cost += 1 + 3 * 3 + 4;
-                // 3 x (d <= 3B) + 1 x (d <= 4B) == 8b + (3 * 24b) + (1 * 32b)
-                // == 28 bits per doc
-            } else if (__natereverse(data, k, 1 << (3 * 8), Integer.MAX_VALUE)) {
+                counters[16] += 4;
+            } else if (__hybridvbytereverse(data, k, 256 * 256 * 256, 256 * 256 * 256 * 256)) {
+                // 1 3B large plus 3 4B huge (32 b/d)
                 k += 4;
                 cost += 1 + 3 * 4 + 3;
-                // Three giant and one large:
-                // 3 x (d <= 4B) + 1 x (d <= 3B) == 8b + (3 * 32b) + (1 * 24b)
-                // == 32 bits per doc
+                counters[17] += 4;
             } else {
+                // 4 4B huge elements (34 b/d)
                 k += 4;
                 cost += 1 + 4 * 4;
                 throw new RuntimeException("really?");
-                // Four giant:
-                // 4 x (d > 3B) == 8b + (4 * 32b) = 34 bits per doc
             }
         }
         if (false) {
@@ -330,6 +317,8 @@ public class RunCostModels {
                     if (Util.bits(data[z]) > b)
                         ++numberofexceptions;
                 }
+                // thiscost = chosen base bits + numExceptions * 
+                //     (8-bits for position + bits necessary to store exception)
                 int thiscost = b * w + numberofexceptions * (8 + maxbit - b);
                 if (thiscost < lowestcost) {
                     lowestcost = thiscost;
@@ -389,7 +378,7 @@ public class RunCostModels {
         System.out.println("reasonable lower bound "
                 + df.format(binarypackinglowerbound(data) * 8.0 / N));
         System.out.println("using a bitmap " + df.format(Max * 1.0 / N));
-        System.out.println("nate " + df.format(nate(data) * 8.0 / N));
+        System.out.println("hybridvbyte " + df.format(hybridvbyte(data) * 8.0 / N));
         System.out.println("binary packing (32) "
                 + df.format(binarypacking(data, 32) * 8.0 / N));
         System.out.println("binary packing (128) "
@@ -419,11 +408,12 @@ public class RunCostModels {
     }
 
     public static void main(String[] args) {
-        int Max = 1 << 22;
+        int Max = 1 << 24;
         System.out.println("We estimate the number of bits per int.");
         System.out.println("First with uniform data.");
         UniformDataGenerator udg = new UniformDataGenerator();
-        double[] P = { 0.99, 0.95, 0.5, 0.1 };
+        double[] P = { 0.99, 0.95, .90, .85, .80, .75, .70, .65, .60, .55, .5, .45, .40, .35, .30, .25, .20, 
+                       .15, 0.1, .05, .04, .03, .02, .01, .001, .0001, .00001, .000001 };
         for (double p : P) {
             System.out.println("uniform distribution with density = " + p);
             int[] array = udg.generateUniform((int) Math.round(Max * p), Max);
@@ -434,7 +424,7 @@ public class RunCostModels {
         Max = 1 << 25;
         System.out.println("Next with cluster data.");
         ClusteredDataGenerator cdg = new ClusteredDataGenerator();
-        for (int N = 131072; N <= 1048576; N *= 8) {
+        for (int N = 131072; N <= 1048576; N *= 2) {
             System.out.println("N=" + N);
             int[] data = cdg.generateClustered(N, Max);
             for (int k = data.length - 1; k > 0; --k)
