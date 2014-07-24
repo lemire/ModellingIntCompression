@@ -266,6 +266,63 @@ public class RunCostModels {
         }
         return cost;
     }
+    public static int simplealt(int[] data) {
+        double cost = 0;
+        for (int k = 0; k < data.length;) {
+            // we do something simple... 
+            int left = data.length - k;
+            cost += 0.5;
+            if (Util.maxbits(data, k, Math.min(left, 256)) <= 0) {
+                k += 256;
+            } else if (Util.maxbits(data, k, Math.min(left, 128)) <= 0) {
+                k += 128;                
+            } else if (Util.maxbits(data, k, Math.min(left, 64)) <= 1) {
+                k += 64;
+                cost += 64/8;
+            } else if (Util.maxbits(data, k, Math.min(left, 32)) <= 2) {
+                k += 32;
+                cost += 64/8;
+            } else if (Util.maxbits(data, k, Math.min(left, 32)) <= 3) {
+                k += 128;
+                cost += 3*32/8;
+            } else if (Util.maxbits(data, k, Math.min(left, 16)) <= 4) {
+                k += 16;
+                cost += 4*16/8;
+            } else if (Util.maxbits(data, k, Math.min(left, 32)) <= 5) {
+                k += 32;
+                cost += 5*32/8;
+            } else if (Util.maxbits(data, k, Math.min(left, 32)) <= 6) {
+                k += 32;
+                cost += 6*32/8;
+            } else if (Util.maxbits(data, k, Math.min(left, 32)) <= 7) {
+                k += 32;
+                cost += 7*32/8;
+            } else if (Util.maxbits(data, k, Math.min(left, 4)) <= 8) {
+                k += 4;
+                cost += 4;
+            } else if (Util.maxbits(data, k, Math.min(left, 32)) <= 10) {
+                k += 32;
+                cost += 10*32/8;
+            } else if (Util.maxbits(data, k, Math.min(left, 32)) <= 12) {
+                k += 32;
+                cost += 12*32/8;
+            } else if (Util.maxbits(data, k, Math.min(left, 4)) <= 16) {
+                k += 4;
+                cost += 16*4/8;
+            } else if (Util.maxbits(data, k, Math.min(left, 4)) <= 24) {
+                k += 4;
+                cost += 24*4/8;
+            } else if (Util.maxbits(data, k, Math.min(left, 2)) <= 32) {
+                k += 2;
+                cost += 64;
+            } else {
+                k += 1;
+                cost += 64;
+            }
+
+        }
+        return (int) Math.round( cost);
+    }
 
     public static int simple16b(int[] data) {
         int cost = 0;
@@ -365,13 +422,39 @@ public class RunCostModels {
             if (nofe == 0)
                 cost += 2;
             else {
-                //System.out.println((maxbit - ab)+" "+nofe*1.0/w);
                 cost += 3 + nofe;
             }
+            
             cost += (ab * w + 7) / 8;
         }
         for (int k = 0; k < buffer.length; ++k) {
             cost += (buffer[k] + 31) / 32 * 32 * k / 8;
+        }
+        return cost;
+    }
+    public static int natepfor(int[] data) {
+        int cost = 0;
+        int w = 32;
+        for (int k = 0; k + w <= data.length; k += w) {
+            int maxbit = Util.maxbits(data, k, w);
+            int lowestcost = maxbit * w;
+            int ab = maxbit;
+            int nofe = 0;
+            for (int b = Math.max(0,maxbit-3); b <= maxbit; ++b) {
+                int numberofexceptions = 0;
+                for (int z = k; z < k + w; ++z) {
+                    if (Util.bits(data[z]) > b)
+                        ++numberofexceptions;
+                }
+                int thiscost = b * w + numberofexceptions * 8;
+                if (thiscost < lowestcost) {
+                    lowestcost = thiscost;
+                    ab = b;
+                    nofe = numberofexceptions;
+                }
+            }
+            cost += 1 + nofe;
+            cost += (ab * w + 7) / 8;
         }
         return cost;
     }
@@ -429,12 +512,15 @@ public class RunCostModels {
                 + df.format(fastpfor(data, 256) * 8.0 / N));
         System.out.println("exppfor (256) "
                 + df.format(exppfor(data) * 8.0 / N));
+        System.out.println("natepfor (32) "
+                + df.format(natepfor(data) * 8.0 / N));
         System.out.println("varint " + df.format(varint(data) * 8.0 / N));
         System.out.println("idealvarint "
                 + df.format(idealvarint(data) * 8.0 / N));
         System.out.println("simple4b " + df.format(simple4b(data) * 8.0 / N));
         System.out.println("simple8b " + df.format(simple8b(data) * 8.0 / N));
         System.out.println("simple16b " + df.format(simple16b(data) * 8.0 / N));
+        System.out.println("simplealt " + df.format(simplealt(data) * 8.0 / N));
         System.out.println("packedvarint4 "
                 + df.format(packedvarint(data, 4) * 8.0 / N));
         System.out.println("packedvarint8 "
