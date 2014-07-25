@@ -270,7 +270,7 @@ public class RunCostModels {
                 k += 32;
                 cost += 64/8;
             } else if (Util.maxbits(data, k, Math.min(left, 32)) <= 3) {
-                k += 128;
+                k += 32;
                 cost += 3*32/8;
             } else if (Util.maxbits(data, k, Math.min(left, 16)) <= 4) {
                 k += 16;
@@ -387,6 +387,8 @@ public class RunCostModels {
     public static int fastpfor(int[] data, int w) {
         int cost = 0;
         int[] buffer = new int[33];
+        int[][] used = new int[40][256];  // [exceptionWidth][numExceptions]
+
         for (int k = 0; k + w <= data.length; k += w) {
             int maxbit = Util.maxbits(data, k, w);
             int lowestcost = maxbit * w;
@@ -413,9 +415,24 @@ public class RunCostModels {
             else {
                 cost += 3 + nofe;
             }
-            
+
+            // increment used[exceptionWidth][numExceptions]
+            used[maxbit - ab][nofe] += 1;
+
             cost += (ab * w + 7) / 8;
         }
+
+        if (false) {
+            for (int i = 0; i < 8; i += 1)  {
+                System.out.print( "Width " + i + ": ");
+                for (int j = 0; j < 32; j += 1) {
+                    System.out.print(used[i][j] + " ");
+                }
+                System.out.println();
+            }
+        }
+                
+
         for (int k = 0; k < buffer.length; ++k) {
             cost += (buffer[k] + 31) / 32 * 32 * k / 8;
         }
