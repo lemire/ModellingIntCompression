@@ -328,18 +328,37 @@ public class RunCostModels {
 
     public static int simple4b(int[] data) {
         int cost = 0;
+        boolean verbose = false;
+        int counter[] = new int[33];
+        int total = 0;
+
         for (int k = 0; k < data.length;) {
             int left = data.length - k;
+            ++total;
+            if (Util.maxbits(data, k, Math.min(left, 32)) <= 0) {
+                cost += 4;
+                ++counter[0];
+                k += 32 ;
+                continue;
+            }
             for (int b = 1; b <= 32; ++b) {
                 if (28 / (b + 1) == 28 / b)
                     continue;
                 if (Util.maxbits(data, k, Math.min(left, 28 / b)) <= b) {
                     k += 32 / b;
+                    ++counter[b];
                     break;
                 }
             }
             cost += 4;
+        }    
+        if(verbose) {
+         for (int b = 0; b <= 32; ++b) {
+            if(counter[b] >0)System.out.print(" b="+b+"("+Math.round(counter[b]*100.0/total)+"%)");
+         }
+         System.out.println();
         }
+                
         return cost;
     }
 
