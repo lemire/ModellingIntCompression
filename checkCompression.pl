@@ -1,4 +1,5 @@
 #! /usr/bin/perl 
+# Dependency: "sudo cpanp i Math::Random" 
 
 # This program estimates the compression of a list of delta gaps, presuming that they have geometric distribution.
 # The gaps are created 8 at at time by truncating exponentially distributed random floats.  
