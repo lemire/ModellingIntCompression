@@ -46,6 +46,7 @@
 # The last two numbers in parentheses (2.53 -1.08) are the repeated width of the best scheme 
 # followed by the difference of this scheme from the standard BP128 in bits/integer.  
 #
+# Edit:  the additional 9 numbers on the last line are Rice coding with bases 2^0-2^8.  
 
 
 use strict;
@@ -898,6 +899,29 @@ sub BP128 {
     return $bits;
 }
 
+sub Rice {
+    my ($width, $randomArray) = @_;
+    my $bits = 8 * $width;  # 8 remainders
+    
+    my $divisor = 2 ** $width;
+    for my $element (@$randomArray) {
+	my $quotient = int($element / $divisor);
+	$bits += $quotient + 1;  # unary plus stop bit
+    }
+
+    return $bits;
+}
+
+sub Rice_0 {  return Rice(0, @_); }
+sub Rice_1 {  return Rice(1, @_); }
+sub Rice_2 {  return Rice(2, @_); }
+sub Rice_3 {  return Rice(3, @_); }
+sub Rice_4 {  return Rice(4, @_); }
+sub Rice_5 {  return Rice(5, @_); }
+sub Rice_6 {  return Rice(6, @_); }
+sub Rice_7 {  return Rice(7, @_); }
+sub Rice_8 {  return Rice(8, @_); }
+
 my @BucketNames;
 sub matchRandom {
     my ($randomArray, $matchArray) = @_;
@@ -974,7 +998,8 @@ sub checkDistribution {
 	$numBuckets = matchRandom(\@random8, \@match);
 	$numScorers = 0;
 	for my $scorer (\&BP128, \&BP8_1_p0, \&BP8_1_p1, \&BP8_2_p123, \&BP8_2_p234, \&BP8_2_p345A, 
-			\&BP8_2_p345, \&BP8_2_p456, \&BP8_2_p567, \&BP8_2_p789, \&BP8_8_patch) {
+			\&BP8_2_p345, \&BP8_2_p456, \&BP8_2_p567, \&BP8_2_p789, \&BP8_8_patch,
+			\&Rice_1, \&Rice_2, \&Rice_3, \&Rice_4, \&Rice_5, \&Rice_6, \&Rice_7, \&Rice_8) {
 	    $scores[$numScorers++] += &$scorer(\@random8);
 	}
     }
