@@ -10,6 +10,53 @@ public class RunCostModels {
         }
         return cost;
     }
+    
+    private static int recursiveInterpolativeCoding(int[] data, int begin, int end) {
+        // probably buggy
+        if(data[begin]==data[end-1]) return 0;
+        if((end-begin-1)/2 == 0) return 0;
+        int middle = (end-begin-1)/2 + begin;
+        if((middle >= end-1) || (middle <= begin)) throw new RuntimeException("bug");
+        return Util.bits(data[end-1]-data[begin] - (end-begin-1)) + recursiveInterpolativeCoding(data,begin,middle) + recursiveInterpolativeCoding(data,middle,end);
+    }
+    
+    public static int binaryinterpolativecoding(int[] data, int w) {
+        // have to compute the prefix sum first!!!
+        int[] sorted = new int[data.length];
+        sorted[0] = data[0];
+        for(int k = 1; k<data.length; ++k)
+          sorted[k] = data[k] + sorted[k-1] + 1;
+        int cost = 0;// cost in bits
+        for (int k = 0; k + w <= sorted.length; k += w) {         
+            cost +=  32 + recursiveInterpolativeCoding(sorted,k,k+w);
+        }
+        return (cost+7)/8;// round up to byte
+    }
+
+
+    private static int recursiveInterpolativeCodinglazy(int[] data, int begin, int end, int c) {
+        // probably buggy
+        if(data[begin]==data[end-1]) return 0;
+        if((end-begin-1)/2 == 0) return 0;
+        int middle = (end-begin-1)/2 + begin;
+        if((middle >= end-1) || (middle <= begin)) throw new RuntimeException("bug");
+        int newc = Util.bits(data[end-1]-data[begin] - (end-begin-1));
+        return c + recursiveInterpolativeCodinglazy(data,begin,middle,newc) + recursiveInterpolativeCodinglazy(data,middle,end,newc);
+    }
+    
+    public static int binaryinterpolativecodinglazy(int[] data, int w) {
+        // have to compute the prefix sum first!!!
+        int[] sorted = new int[data.length];
+        sorted[0] = data[0];
+        for(int k = 1; k<data.length; ++k)
+          sorted[k] = data[k] + sorted[k-1] + 1;
+        int cost = 0;// cost in bits
+        for (int k = 0; k + w <= sorted.length; k += w) {         
+            cost +=  32 + recursiveInterpolativeCodinglazy(sorted,k,k+w,32);
+        }
+        return (cost+7)/8;// round up to byte
+    }
+
 
     public static int bibinarypacking(int[] data, int w) {
         int cost = 0;
@@ -537,6 +584,11 @@ public class RunCostModels {
 
         System.out.println("reasonable lower bound "
                 + df.format(binarypackinglowerbound(data) * 8.0 / N));
+        System.out.println("binary interpolative coding (128) "
+                + df.format(binaryinterpolativecoding(data,128) * 8.0 / N));
+        System.out.println("lazy binary interpolative coding (128) "
+                + df.format(binaryinterpolativecodinglazy (data,128) * 8.0 / N));
+
         System.out.println("using a bitmap " + df.format(Max * 1.0 / N));
         System.out.println("hybridvbyte " + df.format(hybridvbyte(data) * 8.0 / N));
         System.out.println("bibinary packing (32) "
