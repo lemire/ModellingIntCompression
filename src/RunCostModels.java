@@ -11,6 +11,19 @@ public class RunCostModels {
         return cost;
     }
 
+    public static int bibinarypacking(int[] data, int w) {
+        int cost = 0;
+        for (int k = 0; k + w <= data.length; k+=w) {
+            int cost1 = 1+(Util.maxbits(data, k, w) * w + 7) / 8;
+            int cost2 = 2+(Util.maxbits(data, k, w/2) * w/2 + 7) / 8+(Util.maxbits(data, k+w/2, w/2) * w/2 + 7) / 8;
+            if(cost1 < cost2) 
+              cost += cost1;
+            else
+              cost += cost2;
+        }
+        return cost;
+    }
+
     public static int binarypackinglowerbound(int[] data) {
         int cost = 0;
         for (int k = 0; k < data.length; ++k) {
@@ -509,6 +522,10 @@ public class RunCostModels {
                 + df.format(binarypackinglowerbound(data) * 8.0 / N));
         System.out.println("using a bitmap " + df.format(Max * 1.0 / N));
         System.out.println("hybridvbyte " + df.format(hybridvbyte(data) * 8.0 / N));
+        System.out.println("bibinary packing (32) "
+                + df.format(bibinarypacking(data, 32) * 8.0 / N));
+        System.out.println("bibinary packing (128) "
+                + df.format(bibinarypacking(data, 128) * 8.0 / N));
         System.out.println("binary packing (32) "
                 + df.format(binarypacking(data, 32) * 8.0 / N));
         System.out.println("binary packing (128) "
