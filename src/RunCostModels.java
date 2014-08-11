@@ -10,7 +10,13 @@ public class RunCostModels {
         }
         return cost;
     }
-    
+    public static int binarypackingnooverhead(int[] data, int w) {
+        int cost = 0;
+        for (int k = 0; k + w <= data.length; k += w) {
+            cost += (Util.maxbits(data, k, w) * w + 7) / 8;
+        }
+        return cost;
+    }
     private static int recursiveInterpolativeCoding(int[] data, int begin, int end) {
         // probably buggy
         if(data[begin]==data[end-1]) return 0;
@@ -33,7 +39,10 @@ public class RunCostModels {
         return (cost+7)/8;// round up to byte
     }
 
+    
 
+
+    
     private static int recursiveInterpolativeCodinglazy(int[] data, int begin, int end, int c) {
         // probably buggy
         if(data[begin]==data[end-1]) return 0;
@@ -595,10 +604,18 @@ public class RunCostModels {
                 + df.format(bibinarypacking(data, 32) * 8.0 / N));
         System.out.println("bibinary packing (128) "
                 + df.format(bibinarypacking(data, 128) * 8.0 / N));
+        System.out.println("binary packing (8) "
+                + df.format(binarypacking(data, 8) * 8.0 / N));
         System.out.println("binary packing (32) "
                 + df.format(binarypacking(data, 32) * 8.0 / N));
         System.out.println("binary packing (128) "
                 + df.format(binarypacking(data, 128) * 8.0 / N));
+        System.out.println("binary packing (8-nooverhead) "
+                + df.format(binarypackingnooverhead(data, 8) * 8.0 / N));
+        System.out.println("binary packing (32-nooverhead) "
+                + df.format(binarypackingnooverhead(data, 32) * 8.0 / N));
+        System.out.println("binary packing (128-nooverhead) "
+                + df.format(binarypackingnooverhead(data, 128) * 8.0 / N));
         System.out.println("fastpfor (128) "
                 + df.format(fastpfor(data, 128) * 8.0 / N));
         System.out.println("fastpfor (256) "
