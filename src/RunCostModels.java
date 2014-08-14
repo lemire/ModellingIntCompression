@@ -135,11 +135,11 @@ public class RunCostModels {
     // all less than large, at most one greater or equal to small
     private static boolean __hybridvbyte(int[] data, int pos, int small, int large) {
         int left = Math.min(4, data.length - pos);
-        int smallcnt = 0;
+        //int smallcnt = 0;
         int largecnt = 0;
         for (int k = 0; k < left; ++k) {
             if (data[pos + k] < small)
-                ++smallcnt;
+                continue;//++smallcnt;
             else if (data[pos + k] < large)
                 ++largecnt;
             else
@@ -154,12 +154,11 @@ public class RunCostModels {
             int large) {
         int left = Math.min(4, data.length - pos);
         int smallcnt = 0;
-        int largecnt = 0;
         for (int k = 0; k < left; ++k) {
             if (data[pos + k] < small)
                 ++smallcnt;
             else if (data[pos + k] < large)
-                ++largecnt;
+                continue;
             else
                 return false;
         }
@@ -447,6 +446,30 @@ public class RunCostModels {
         }
         return cost;
     }
+
+    public static int blockedRice(int[] data, int w) {
+        int cost = 0;
+        for (int k = 0; k + w <= data.length; k += w) {
+            int mb = Util.maxbits(data, k, w);
+            int bestb = mb;
+            int bestcost = mb * w;
+            for(int b = 0; b<mb; ++b) {
+                int thiscost = b * w;
+                for (int i = 0; i<w;++i){
+                    int val = data[k+i];
+                    int ratio = val >>b;
+                    thiscost += ratio + 1;
+                }
+                if(thiscost < bestcost) {
+                    bestb = b;
+                    bestcost = thiscost;
+                }
+            }
+            cost += 1 + (bestcost+7)/8;
+        }
+        return cost;
+    }
+
     public static int exppfor(int[] data) {
         double cost = 0;
         int w = 256;
@@ -597,7 +620,7 @@ public class RunCostModels {
                 + df.format(binaryinterpolativecoding(data,128) * 8.0 / N));
         System.out.println("lazy binary interpolative coding (128) "
                 + df.format(binaryinterpolativecodinglazy (data,128) * 8.0 / N));
-
+        System.out.println("Blocked rice (128) "+df.format(blockedRice (data,128) * 8.0 / N));
         System.out.println("using a bitmap " + df.format(Max * 1.0 / N));
         System.out.println("hybridvbyte " + df.format(hybridvbyte(data) * 8.0 / N));
         System.out.println("bibinary packing (32) "
@@ -648,16 +671,7 @@ public class RunCostModels {
         int Max = 1 << 24;
         System.out.println("We estimate the number of bits per int.");
         System.out.println("First with uniform data.");
-        UniformDataGenerator udg = new UniformDataGenerator();
-        double[] P = { 0.99, 0.95, .90, .85, .80, .75, .70, .65, .60, .55, .5, .45, .40, .35, .30, .25, .20, 
-                       .15, 0.1, .05, .04, .03, .02, .01, .001, .0001, .00001, .000001 };
-        for (double p : P) {
-            System.out.println("uniform distribution with density = " + p);
-            int[] array = udg.generateUniform((int) Math.round(Max * p), Max);
-            for (int k = array.length - 1; k > 0; --k)
-                array[k] -= array[k - 1] + 1;
-            process(array, Max);
-        }
+        
         Max = 1 << 25;
         System.out.println("Next with cluster data.");
         ClusteredDataGenerator cdg = new ClusteredDataGenerator();
@@ -673,6 +687,18 @@ public class RunCostModels {
                 data[loc] += Math.abs(r.nextInt()) % (1 << 8);
             }
             process(data, Max);
+        }
+        if(false) {
+        UniformDataGenerator udg = new UniformDataGenerator();
+        double[] P = { 0.99, 0.95, .90, .85, .80, .75, .70, .65, .60, .55, .5, .45, .40, .35, .30, .25, .20, 
+                       .15, 0.1, .05, .04, .03, .02, .01, .001, .0001, .00001, .000001 };
+        for (double p : P) {
+            System.out.println("uniform distribution with density = " + p);
+            int[] array = udg.generateUniform((int) Math.round(Max * p), Max);
+            for (int k = array.length - 1; k > 0; --k)
+                array[k] -= array[k - 1] + 1;
+            process(array, Max);
+        }
         }
     }
 
