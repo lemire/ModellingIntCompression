@@ -25,7 +25,7 @@ public class RunCostModels {
         if((middle >= end-1) || (middle <= begin)) throw new RuntimeException("bug");
         return Util.bits(data[end-1]-data[begin] - (end-begin-1)) + recursiveInterpolativeCoding(data,begin,middle) + recursiveInterpolativeCoding(data,middle,end);
     }
-    
+
     public static int binaryinterpolativecoding(int[] data, int w) {
         // have to compute the prefix sum first!!!
         int[] sorted = new int[data.length];
@@ -33,16 +33,16 @@ public class RunCostModels {
         for(int k = 1; k<data.length; ++k)
           sorted[k] = data[k] + sorted[k-1] + 1;
         int cost = 0;// cost in bits
-        for (int k = 0; k + w <= sorted.length; k += w) {         
+        for (int k = 0; k + w <= sorted.length; k += w) {
             cost +=  32 + recursiveInterpolativeCoding(sorted,k,k+w);
         }
         return (cost+7)/8;// round up to byte
     }
 
-    
 
 
-    
+
+
     private static int recursiveInterpolativeCodinglazy(int[] data, int begin, int end, int c) {
         // probably buggy
         if(data[begin]==data[end-1]) return 0;
@@ -52,7 +52,7 @@ public class RunCostModels {
         int newc = Util.bits(data[end-1]-data[begin] - (end-begin-1));
         return c + recursiveInterpolativeCodinglazy(data,begin,middle,newc) + recursiveInterpolativeCodinglazy(data,middle,end,newc);
     }
-    
+
     public static int binaryinterpolativecodinglazy(int[] data, int w) {
         // have to compute the prefix sum first!!!
         int[] sorted = new int[data.length];
@@ -60,7 +60,7 @@ public class RunCostModels {
         for(int k = 1; k<data.length; ++k)
           sorted[k] = data[k] + sorted[k-1] + 1;
         int cost = 0;// cost in bits
-        for (int k = 0; k + w <= sorted.length; k += w) {         
+        for (int k = 0; k + w <= sorted.length; k += w) {
             cost +=  32 + recursiveInterpolativeCodinglazy(sorted,k,k+w,32);
         }
         return (cost+7)/8;// round up to byte
@@ -72,7 +72,7 @@ public class RunCostModels {
         for (int k = 0; k + w <= data.length; k+=w) {
             int cost1 = 1+(Util.maxbits(data, k, w) * w + 7) / 8;
             int cost2 = 2+(Util.maxbits(data, k, w/2) * w/2 + 7) / 8+(Util.maxbits(data, k+w/2, w/2) * w/2 + 7) / 8;
-            if(cost1 < cost2) 
+            if(cost1 < cost2)
               cost += cost1;
             else
               cost += cost2;
@@ -145,7 +145,7 @@ public class RunCostModels {
             else
                 return false;
         }
-        
+
         return largecnt <= 1;
     }
 
@@ -324,13 +324,13 @@ public class RunCostModels {
     public static int simplealt(int[] data) {
         double cost = 0;
         for (int k = 0; k < data.length;) {
-            // we do something simple... 
+            // we do something simple...
             int left = data.length - k;
             cost += 0.5;
             if (Util.maxbits(data, k, Math.min(left, 256)) <= 0) {
                 k += 256;
             } else if (Util.maxbits(data, k, Math.min(left, 128)) <= 0) {
-                k += 128;                
+                k += 128;
             } else if (Util.maxbits(data, k, Math.min(left, 64)) <= 1) {
                 k += 64;
                 cost += 64/8;
@@ -419,14 +419,14 @@ public class RunCostModels {
                 }
             }
             cost += 4;
-        }    
+        }
         if(verbose) {
          for (int b = 0; b <= 32; ++b) {
             if(counter[b] >0)System.out.print(" b="+b+"("+Math.round(counter[b]*100.0/total)+"%)");
          }
          System.out.println();
         }
-                
+
         return cost;
     }
 
@@ -453,6 +453,7 @@ public class RunCostModels {
             int mb = Util.maxbits(data, k, w);
             int bestb = mb;
             int bestcost = mb * w;
+            int bestdensity = -1;
             for(int b = 0; b<mb; ++b) {
                 int thiscost = b * w;
                 for (int i = 0; i<w;++i){
@@ -463,10 +464,13 @@ public class RunCostModels {
                 if(thiscost < bestcost) {
                     bestb = b;
                     bestcost = thiscost;
+                    bestdensity = (thiscost - b * w);
+
                 }
             }
             cost += 1 + (bestcost+7)/8;
         }
+
         return cost;
     }
 
@@ -480,7 +484,7 @@ public class RunCostModels {
                 int tmax = 0;
                 int secondmax = 0;
                 for (int i = 0; i<16;++i){
-                    int val =data[k+j+i]; 
+                    int val =data[k+j+i];
                     if(val>tmax) tmax = val;
                     else if(val > secondmax ) secondmax = val;
                 }
@@ -511,7 +515,7 @@ public class RunCostModels {
                     if (Util.bits(data[z]) > b)
                         ++numberofexceptions;
                 }
-                // thiscost = chosen base bits + numExceptions * 
+                // thiscost = chosen base bits + numExceptions *
                 //     (8-bits for position + bits necessary to store exception)
                 int thiscost = b * w + numberofexceptions * (8 + maxbit - b);
                 if (thiscost < lowestcost) {
@@ -542,7 +546,7 @@ public class RunCostModels {
                 System.out.println();
             }
         }
-                
+
 
         for (int k = 0; k < buffer.length; ++k) {
             cost += (buffer[k] + 31) / 32 * 32 * k / 8;
@@ -607,6 +611,40 @@ public class RunCostModels {
         return cost;
     }
 
+    // divide by 8, rounds up
+    public static int d8(int x ) {
+      return (x + 7) /8 ;
+    }
+
+    // inspired by https://github.com/powturbo/TurboPFor/
+    public static int turbopfor(int[] data, int w) {
+        int cost = 0;
+        for (int k = 0; k + w <= data.length; k += w) {
+            int maxbit = Util.maxbits(data, k, w);
+            cost += d8(w); // we always use 1 bit (due to the bitmap)
+            cost += 3 ; // 1 byte for maxbit, 1 byte for b and 1 byte for # of exceptions
+            int lowestcost = d8(maxbit * w);
+            int ab = maxbit;
+            int nofe = 0;
+            for (int b = 0; b <= maxbit; ++b) {
+                int numberofexceptions = 0;
+                for (int z = k; z < k + w; ++z) {
+                    if (Util.bits(data[z]) > b)
+                        ++numberofexceptions;
+                }
+                int thiscost = d8(b * w)  + d8(numberofexceptions * ( maxbit - b ) ) ;
+                if (thiscost < lowestcost) {
+                    lowestcost = thiscost;
+                    ab = b;
+                    nofe = numberofexceptions;
+                }
+            }
+            cost += lowestcost;
+        }
+        return cost;
+    }
+
+
     public static void process(int[] data, int Max) {
         int N = data.length;
         if(N<4*256) {
@@ -647,6 +685,8 @@ public class RunCostModels {
                 + df.format(fastpfor(data, 128) * 8.0 / N));
         System.out.println("blockedfastpfor (256) "
                 + df.format(fastpfor(data, 256) * 8.0 / N));
+        System.out.println("turbopfor (128) "
+                + df.format(turbopfor(data, 128) * 8.0 / N));
         System.out.println("exppfor (256) "
                 + df.format(exppfor(data) * 8.0 / N));
         System.out.println("natepfor (32) "
@@ -671,7 +711,7 @@ public class RunCostModels {
         int Max = 1 << 24;
         System.out.println("We estimate the number of bits per int.");
         System.out.println("First with uniform data.");
-        
+
         Max = 1 << 25;
         System.out.println("Next with cluster data.");
         ClusteredDataGenerator cdg = new ClusteredDataGenerator();
@@ -690,7 +730,7 @@ public class RunCostModels {
         }
         if(false) {
         UniformDataGenerator udg = new UniformDataGenerator();
-        double[] P = { 0.99, 0.95, .90, .85, .80, .75, .70, .65, .60, .55, .5, .45, .40, .35, .30, .25, .20, 
+        double[] P = { 0.99, 0.95, .90, .85, .80, .75, .70, .65, .60, .55, .5, .45, .40, .35, .30, .25, .20,
                        .15, 0.1, .05, .04, .03, .02, .01, .001, .0001, .00001, .000001 };
         for (double p : P) {
             System.out.println("uniform distribution with density = " + p);
