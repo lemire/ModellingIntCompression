@@ -621,9 +621,7 @@ public class RunCostModels {
         int cost = 0;
         for (int k = 0; k + w <= data.length; k += w) {
             int maxbit = Util.maxbits(data, k, w);
-            cost += d8(w); // we always use 1 bit (due to the bitmap)
-            cost += 2 ; // 1 byte for maxbit, 1 byte for b 
-            int lowestcost = d8(maxbit * w);
+            int lowestcost = d8(maxbit * w) + 1;//No exceptions, means only bitpacking is used. We store 6 bits for the bits width + 1 bit indicating bit packing
             int ab = maxbit;
             int nofe = 0;
             for (int b = 0; b <= maxbit; ++b) {
@@ -632,7 +630,7 @@ public class RunCostModels {
                     if (Util.bits(data[z]) > b)
                         ++numberofexceptions;
                 }
-                int thiscost = d8(b * w)  + d8(numberofexceptions * ( maxbit - b ) ) ;
+                int thiscost = 2 + d8(w) + d8(b * w)  + d8(numberofexceptions * ( maxbit - b ) ) ;// with exceptions, we store the second bits width in another byte. We have also 16 bytes bitmap (for 128 values) Total: 2 bytes + 16 bytes + PAD8(n*bx) + PAD8(n*b) 
                 if (thiscost < lowestcost) {
                     lowestcost = thiscost;
                     ab = b;
