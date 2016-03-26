@@ -631,6 +631,14 @@ public class RunCostModels {
                         ++numberofexceptions;
                 }
                 int thiscost = 2 + d8(w) + d8(b * w)  + d8(numberofexceptions * ( maxbit - b ) ) ;// with exceptions, we store the second bits width in another byte. We have also 16 bytes bitmap (for 128 values) Total: 2 bytes + 16 bytes + PAD8(n*bx) + PAD8(n*b) 
+/**
+
+Total: 2 bytes + 16 bytes + PAD8(nx*bx) + PAD8(n*b)
+nx : number of exceptions
+n : number of values (=128)
+bx: bit width for the nx exceptions
+b : bit with for the n values
+*/
                 if (thiscost < lowestcost) {
                     lowestcost = thiscost;
                     ab = b;
