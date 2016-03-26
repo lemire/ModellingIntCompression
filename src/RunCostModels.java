@@ -622,7 +622,7 @@ public class RunCostModels {
         for (int k = 0; k + w <= data.length; k += w) {
             int maxbit = Util.maxbits(data, k, w);
             cost += d8(w); // we always use 1 bit (due to the bitmap)
-            cost += 3 ; // 1 byte for maxbit, 1 byte for b and 1 byte for # of exceptions
+            cost += 2 ; // 1 byte for maxbit, 1 byte for b 
             int lowestcost = d8(maxbit * w);
             int ab = maxbit;
             int nofe = 0;
